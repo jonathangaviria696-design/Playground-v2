@@ -1,0 +1,174 @@
+<!--
+  dashboard.html — Página principal / catálogo de juegos
+  Modelo: juegos (Page), juegosAccion, juegosRPG, juegosShooter.
+  Requiere Spring Security para sec:authorize en la barra de navegación.
+-->
+<!DOCTYPE html>
+<!-- xmlns:th — Thymeleaf | xmlns:sec — Spring Security (visibilidad por rol/sesión) -->
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Playground — Compara precios de videojuegos</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+  <!-- Navegación global: enlaces públicos y condicionales por autenticación/rol -->
+  <nav class="navbar">
+    <h1 class="logo"><span style="color:var(--primary)">PLAY</span>GROUND</h1>
+    <ul class="nav-links">
+      <li><a href="#todos">Inicio</a></li>
+      <li><a th:href="@{/buscar}">Buscar</a></li>
+      <li><a href="#accion">Acción</a></li>
+      <li><a href="#rpg">RPG</a></li>
+      <li><a href="#shooter">Shooter</a></li>
+      <!-- sec:authorize="isAuthenticated()" — solo usuarios con sesión activa -->
+      <li sec:authorize="isAuthenticated()"><a th:href="@{/wishlist}">❤ Wishlist</a></li>
+      <li sec:authorize="isAuthenticated()"><a th:href="@{/perfil}">Mi perfil</a></li>
+      <!-- sec:authorize="hasRole('ADMIN')" — enlace al panel administrativo -->
+      <li sec:authorize="hasRole('ADMIN')"><a th:href="@{/admin}" style="color:var(--primary)">Admin</a></li>
+    </ul>
+    <!-- sec:authorize="!isAuthenticated()" — botón login si no hay sesión -->
+    <a sec:authorize="!isAuthenticated()" th:href="@{/login}" class="btn small">Iniciar sesión</a>
+    <!-- Formulario POST de logout (CSRF incluido por Spring Security) -->
+    <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post" style="margin:0">
+      <button type="submit" class="btn small" style="background:transparent;border:1px solid #333;color:var(--muted)">Salir</button>
+    </form>
+  </nav>
+
+  <!-- Sección hero: presentación y CTAs al catálogo y buscador -->
+  <section class="hero">
+    <div class="hero-content">
+      <p class="hero-eyebrow">Compara precios de videojuegos</p>
+      <h2>ENCUENTRA EL<br><span style="color:var(--primary)">MEJOR PRECIO</span></h2>
+      <p>Steam · Epic Games · GOG — todo en un solo lugar.</p>
+      <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
+        <a href="#todos" class="btn">Ver Catálogo</a>
+        <a th:href="@{/buscar}" class="btn" style="background:transparent;border:1px solid var(--primary);color:var(--primary)">🔍 Buscar juego</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Catálogo paginado: th:each sobre juegos.content (objeto Page de Spring Data) -->
+  <section class="section" id="todos">
+    <div class="section-header">
+      <h2>Todos los Juegos</h2>
+    </div>
+    <!-- Pestañas de género: th:href con parámetro genero en /buscar -->
+    <div class="cat-tabs">
+      <a class="cat-tab active" th:href="@{/dashboard}">Todos</a>
+      <a class="cat-tab" th:href="@{/buscar(genero='Acción')}">Acción</a>
+      <a class="cat-tab" th:href="@{/buscar(genero='RPG')}">RPG</a>
+      <a class="cat-tab" th:href="@{/buscar(genero='Shooter')}">Shooter</a>
+      <a class="cat-tab" th:href="@{/buscar(genero='Aventura')}">Aventura</a>
+      <a class="cat-tab" th:href="@{/buscar(genero='Estrategia')}">Estrategia</a>
+    </div>
+    <div class="cards">
+      <!-- th:each="juego : ${juegos.content}" — itera la página actual del catálogo -->
+      <div class="card" th:each="juego : ${juegos.content}">
+        <div class="card-img">
+          <!-- th:src / th:alt — imagen y texto alternativo desde el modelo Juego -->
+          <img th:if="${juego.imagenUrl != null and !#strings.isEmpty(juego.imagenUrl)}"
+               th:src="${juego.imagenUrl}" th:alt="${juego.nombre}" style="width:100%;height:100%;object-fit:cover;">
+        </div>
+        <div class="card-badge" th:text="${juego.genero}">Género</div>
+        <h3 th:text="${juego.nombre}">Nombre del Juego</h3>
+        <p th:text="${juego.descripcion}">Descripción</p>
+        <div class="card-footer">
+          <div>
+            <span class="precio-desde"
+                  th:if="${juego.plataformaMinima != null}"
+                  th:text="'Mejor precio en ' + ${juego.plataformaMinima}"></span>
+            <span class="precio"
+                  th:text="${juego.precioMinimo > 0 ? 'Desde $' + #numbers.formatDecimal(juego.precioMinimo,1,0) : 'Ver precios'}">
+            </span>
+          </div>
+          <a th:href="@{/juegos/{id}(id=${juego.juegoId})}" class="btn small">Comparar</a>
+        </div>
+      </div>
+    </div>
+    <!-- Paginación Spring Data: totalPages, hasPrevious, hasNext, number -->
+    <div class="paginacion" th:if="${juegos.totalPages > 1}">
+      <a th:if="${juegos.hasPrevious()}" th:href="@{/dashboard(page=${juegos.number - 1})}">← Anterior</a>
+      <span th:text="'Página ' + ${juegos.number + 1} + ' de ' + ${juegos.totalPages}"></span>
+      <a th:if="${juegos.hasNext()}" th:href="@{/dashboard(page=${juegos.number + 1})}">Siguiente →</a>
+    </div>
+  </section>
+
+  <!-- Sección por género: th:if oculta la sección si la lista del modelo está vacía -->
+  <section class="section category-section" id="accion" th:if="${not #lists.isEmpty(juegosAccion)}">
+    <div class="section-header">
+      <h2><span class="cat-label accion-label">ACCIÓN</span> Juegos de Acción</h2>
+      <a th:href="@{/buscar(genero='Acción')}" class="ver-todos">Ver todos →</a>
+    </div>
+    <div class="cards">
+      <div class="card" th:each="juego : ${juegosAccion}">
+        <div class="card-img">
+          <img th:if="${juego.imagenUrl != null and !#strings.isEmpty(juego.imagenUrl)}"
+               th:src="${juego.imagenUrl}" th:alt="${juego.nombre}" style="width:100%;height:100%;object-fit:cover;">
+        </div>
+        <h3 th:text="${juego.nombre}">Nombre</h3>
+        <div class="card-footer">
+          <span class="precio"
+                th:text="${juego.precioMinimo > 0 ? 'Desde $' + #numbers.formatDecimal(juego.precioMinimo,1,0) : 'Ver precios'}">
+          </span>
+          <a th:href="@{/juegos/{id}(id=${juego.juegoId})}" class="btn small">Ver</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bloque RPG: misma estructura de tarjetas que Acción -->
+  <section class="section category-section" id="rpg" th:if="${not #lists.isEmpty(juegosRPG)}">
+    <div class="section-header">
+      <h2><span class="cat-label rpg-label">RPG</span> Juegos de Rol</h2>
+      <a th:href="@{/buscar(genero='RPG')}" class="ver-todos">Ver todos →</a>
+    </div>
+    <div class="cards">
+      <div class="card" th:each="juego : ${juegosRPG}">
+        <div class="card-img">
+          <img th:if="${juego.imagenUrl != null and !#strings.isEmpty(juego.imagenUrl)}"
+               th:src="${juego.imagenUrl}" th:alt="${juego.nombre}" style="width:100%;height:100%;object-fit:cover;">
+        </div>
+        <h3 th:text="${juego.nombre}">Nombre</h3>
+        <div class="card-footer">
+          <span class="precio"
+                th:text="${juego.precioMinimo > 0 ? 'Desde $' + #numbers.formatDecimal(juego.precioMinimo,1,0) : 'Ver precios'}">
+          </span>
+          <a th:href="@{/juegos/{id}(id=${juego.juegoId})}" class="btn small">Ver</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bloque Shooter -->
+  <section class="section category-section" id="shooter" th:if="${not #lists.isEmpty(juegosShooter)}">
+    <div class="section-header">
+      <h2><span class="cat-label shooter-label">SHOOTER</span> Juegos de Disparos</h2>
+      <a th:href="@{/buscar(genero='Shooter')}" class="ver-todos">Ver todos →</a>
+    </div>
+    <div class="cards">
+      <div class="card" th:each="juego : ${juegosShooter}">
+        <div class="card-img">
+          <img th:if="${juego.imagenUrl != null and !#strings.isEmpty(juego.imagenUrl)}"
+               th:src="${juego.imagenUrl}" th:alt="${juego.nombre}" style="width:100%;height:100%;object-fit:cover;">
+        </div>
+        <h3 th:text="${juego.nombre}">Nombre</h3>
+        <div class="card-footer">
+          <span class="precio"
+                th:text="${juego.precioMinimo > 0 ? 'Desde $' + #numbers.formatDecimal(juego.precioMinimo,1,0) : 'Ver precios'}">
+          </span>
+          <a th:href="@{/juegos/{id}(id=${juego.juegoId})}" class="btn small">Ver</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pie de página -->
+  <footer class="footer">
+    <p>© 2026 — <span style="color:var(--primary)">PLAYGROUND</span> — Todos los derechos reservados</p>
+  </footer>
+</body>
+</html>

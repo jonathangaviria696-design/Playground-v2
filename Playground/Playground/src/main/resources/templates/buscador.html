@@ -1,0 +1,107 @@
+<!--
+  buscador.html — Búsqueda y filtrado de juegos (GET /buscar)
+  Modelo: nombre, genero, plataformaVenta, resultados (Page).
+-->
+<!DOCTYPE html>
+<!-- xmlns:th + xmlns:sec para enlaces y menú según sesión -->
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <title>Búsqueda — Playground</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+  <nav class="navbar">
+    <a th:href="@{/}" style="text-decoration:none"><h1 class="logo"><span style="color:var(--primary)">PLAY</span>GROUND</h1></a>
+    <ul class="nav-links">
+      <li><a th:href="@{/dashboard}">Inicio</a></li>
+      <li><a th:href="@{/buscar}" style="color:var(--primary)">Buscar</a></li>
+      <li sec:authorize="isAuthenticated()"><a th:href="@{/wishlist}">❤ Wishlist</a></li>
+      <li sec:authorize="isAuthenticated()"><a th:href="@{/perfil}">Mi perfil</a></li>
+    </ul>
+  </nav>
+
+  <div class="buscar-wrap">
+    <h2 style="font-family:'Bebas Neue';font-size:2rem;margin-bottom:1rem">Buscador de Juegos</h2>
+
+    <!-- Formulario GET: parámetros nombre, genero, plataformaVenta en la query string -->
+    <form th:action="@{/buscar}" method="get" class="filtros-form">
+      <div>
+        <label>Nombre</label>
+        <!-- th:value conserva el filtro tras enviar el formulario -->
+        <input type="text" name="nombre" th:value="${nombre}" placeholder="Ej: Elden Ring...">
+      </div>
+      <div>
+        <label>Género</label>
+        <select name="genero">
+          <option value="">Todos</option>
+          <!-- th:selected marca la opción activa según el parámetro genero -->
+          <option value="Acción"      th:selected="${genero == 'Acción'}">Acción</option>
+          <option value="RPG"         th:selected="${genero == 'RPG'}">RPG</option>
+          <option value="Shooter"     th:selected="${genero == 'Shooter'}">Shooter</option>
+          <option value="Aventura"    th:selected="${genero == 'Aventura'}">Aventura</option>
+          <option value="Estrategia"  th:selected="${genero == 'Estrategia'}">Estrategia</option>
+          <option value="Deportes"    th:selected="${genero == 'Deportes'}">Deportes</option>
+          <option value="Simulación"  th:selected="${genero == 'Simulación'}">Simulación</option>
+        </select>
+      </div>
+      <div>
+        <label>Disponible en</label>
+        <select name="plataformaVenta">
+          <option value="">Todas las tiendas</option>
+          <option value="Steam"       th:selected="${plataformaVenta == 'Steam'}">Steam</option>
+          <option value="Epic Games"  th:selected="${plataformaVenta == 'Epic Games'}">Epic Games</option>
+          <option value="GOG"         th:selected="${plataformaVenta == 'GOG'}">GOG</option>
+        </select>
+      </div>
+      <div>
+        <button type="submit" class="btn small" style="padding:0.6rem 1.4rem">BUSCAR</button>
+      </div>
+    </form>
+
+    <!-- Contador de resultados cuando el controlador devolvió una Page -->
+    <div class="resultados-info" th:if="${resultados != null}">
+      <span th:text="${resultados.totalElements} + ' resultado(s) encontrado(s)'"></span>
+    </div>
+
+    <div class="cards" th:if="${resultados != null and !resultados.content.isEmpty()}">
+      <div class="card" th:each="juego : ${resultados.content}">
+        <div class="card-img">
+          <img th:if="${juego.imagenUrl != null and !#strings.isEmpty(juego.imagenUrl)}"
+               th:src="${juego.imagenUrl}" th:alt="${juego.nombre}" style="width:100%;height:100%;object-fit:cover;">
+        </div>
+        <div class="card-badge" th:text="${juego.genero}">Género</div>
+        <h3 th:text="${juego.nombre}">Nombre</h3>
+        <!-- Etiquetas de tiendas: th:each sobre la lista de precios del juego -->
+        <div th:if="${juego.precios != null and !juego.precios.isEmpty()}" style="margin-bottom:0.4rem">
+          <span class="plat-tag" th:each="item : ${juego.precios}" th:text="${item.plataforma}">Steam</span>
+        </div>
+        <div class="card-footer">
+          <span class="precio-minimo"
+                th:text="${juego.precioMinimo > 0 ? 'Desde $' + #numbers.formatDecimal(juego.precioMinimo,1,0) : 'Ver precios'}">
+          </span>
+          <a th:href="@{/juegos/{id}(id=${juego.juegoId})}" class="btn small">Ver</a>
+        </div>
+      </div>
+    </div>
+
+    <p th:if="${resultados != null and resultados.content.isEmpty()}"
+       style="text-align:center;color:var(--muted);padding:3rem">
+      No se encontraron juegos con esos criterios.
+    </p>
+
+    <!-- Paginación: th:href preserva filtros al cambiar de página -->
+    <div class="paginacion" th:if="${resultados != null and resultados.totalPages > 1}">
+      <a th:if="${resultados.hasPrevious()}"
+         th:href="@{/buscar(nombre=${nombre},genero=${genero},plataformaVenta=${plataformaVenta},page=${resultados.number - 1})}">← Anterior</a>
+      <span th:text="'Página ' + ${resultados.number + 1} + ' de ' + ${resultados.totalPages}"></span>
+      <a th:if="${resultados.hasNext()}"
+         th:href="@{/buscar(nombre=${nombre},genero=${genero},plataformaVenta=${plataformaVenta},page=${resultados.number + 1})}">Siguiente →</a>
+    </div>
+  </div>
+
+  <footer class="footer"><p>© 2026 — <span style="color:var(--primary)">PLAYGROUND</span></p></footer>
+</body>
+</html>

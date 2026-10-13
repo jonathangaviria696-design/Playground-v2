@@ -1,0 +1,71 @@
+<!--
+  registro.html — Alta de nuevos usuarios
+  Modelo: registroUsuarioForm. Validación con Bean Validation (th:errors, #fields).
+-->
+<!DOCTYPE html>
+<!-- xmlns:th — dialecto Thymeleaf (th:href, th:object, th:field, th:errors) -->
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Registro — Playground</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- th:href="@{/css/styles.css}" — URL del CSS en /static -->
+  <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+  <!-- Barra de navegación -->
+  <nav class="navbar">
+    <a th:href="@{/}" style="text-decoration:none">
+      <h1 class="logo"><span style="color:var(--primary)">PLAY</span>GROUND</h1>
+    </a>
+  </nav>
+  <div class="reg-wrap">
+    <h2>CREAR CUENTA</h2>
+    <!-- th:action POST /registro | th:object vincula el DTO | th:field genera name/value por campo -->
+    <form th:action="@{/registro}" th:object="${registroUsuarioForm}" method="post">
+      <!-- Usuario obligatorio; th:classappend añade is-error si hay errores de validación -->
+      <div class="form-group">
+        <label>Nombre de usuario *</label>
+        <input type="text" th:field="*{username}"
+               th:classappend="${#fields.hasErrors('username') ? 'is-error' : ''}"
+               required autocomplete="username">
+        <!-- th:errors="*{campo}" — mensajes de validación del servidor -->
+        <div class="field-error" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+      </div>
+      <div class="form-group">
+        <label>Email *</label>
+        <input type="email" th:field="*{email}"
+               th:classappend="${#fields.hasErrors('email') ? 'is-error' : ''}"
+               required autocomplete="email">
+        <div class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+      </div>
+      <div class="form-group">
+        <label>Teléfono <span class="opcional">(opcional)</span></label>
+        <input type="text" th:field="*{telefono}" autocomplete="tel">
+      </div>
+      <div class="form-group">
+        <label>Dirección <span class="opcional">(opcional)</span></label>
+        <input type="text" th:field="*{direccion}" autocomplete="street-address">
+      </div>
+      <div class="form-group">
+        <label>Contraseña *</label>
+        <input type="password" th:field="*{password}"
+               th:classappend="${#fields.hasErrors('password') ? 'is-error' : ''}"
+               required autocomplete="new-password">
+        <div class="field-error" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+      </div>
+      <div class="form-group">
+        <label>Confirmar contraseña *</label>
+        <input type="password" th:field="*{confirmPassword}"
+               th:classappend="${#fields.hasErrors('confirmPassword') ? 'is-error' : ''}"
+               required autocomplete="new-password">
+        <div class="field-error" th:if="${#fields.hasErrors('confirmPassword')}" th:errors="*{confirmPassword}"></div>
+      </div>
+      <button type="submit" class="btn-block">REGISTRARSE</button>
+    </form>
+    <div class="login-link">
+      ¿Ya tienes cuenta? <a th:href="@{/login}">Iniciar sesión</a>
+    </div>
+  </div>
+</body>
+</html>

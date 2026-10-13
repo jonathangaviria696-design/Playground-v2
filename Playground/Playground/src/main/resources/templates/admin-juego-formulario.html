@@ -1,0 +1,286 @@
+<!--
+  admin-juego-formulario.html — Crear / editar juego (admin)
+  Modelo: juego. multipart/form-data para subida de imagen y precios dinámicos.
+-->
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Formulario Juego — Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+  <nav class="navbar">
+    <a th:href="@{/}" style="text-decoration:none"><h1 class="logo"><span style="color:var(--primary)">PLAY</span>GROUND</h1></a>
+    <ul class="nav-links">
+      <li><a th:href="@{/admin}">← Panel Admin</a></li>
+    </ul>
+  </nav>
+
+  <div class="form-wrap">
+    <!-- Título condicional: edición si juegoId existe, alta si es null -->
+    <h2 style="font-family:'Bebas Neue';font-size:2rem;margin-bottom:1.5rem"
+        th:text="${juego.juegoId != null ? 'Editar Juego' : 'Nuevo Juego'}">Juego</h2>
+
+    <!-- enctype multipart obligatorio para subir archivos de imagen -->
+    <form th:action="@{/admin/juego/guardar}" method="post" enctype="multipart/form-data">
+      <!-- ID oculto en edición; th:value rellena desde el modelo -->
+      <input type="hidden" name="juegoId" th:value="${juego.juegoId}">
+
+      <div class="form-grid">
+
+        <div class="form-group full">
+          <label>Nombre *</label>
+          <input type="text" name="nombre" th:value="${juego.nombre}" required>
+        </div>
+
+        <div class="form-group full">
+          <label>Descripción</label>
+          <textarea name="descripcion" th:text="${juego.descripcion}"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label>Desarrolladora</label>
+          <input type="text" name="desarrolladora" th:value="${juego.desarrolladora}">
+        </div>
+
+        <div class="form-group">
+          <label>Fecha de lanzamiento</label>
+          <input type="date" name="fechaDeLanzamiento" th:value="${juego.fechaDeLanzamiento}">
+        </div>
+
+        <div class="form-group full">
+          <label>Género</label>
+          <select name="genero">
+            <option value="">Seleccionar...</option>
+            <option value="Acción"      th:selected="${juego.genero == 'Acción'}">Acción</option>
+            <option value="RPG"         th:selected="${juego.genero == 'RPG'}">RPG</option>
+            <option value="Shooter"     th:selected="${juego.genero == 'Shooter'}">Shooter</option>
+            <option value="Aventura"    th:selected="${juego.genero == 'Aventura'}">Aventura</option>
+            <option value="Estrategia"  th:selected="${juego.genero == 'Estrategia'}">Estrategia</option>
+            <option value="Deportes"    th:selected="${juego.genero == 'Deportes'}">Deportes</option>
+            <option value="Simulación"  th:selected="${juego.genero == 'Simulación'}">Simulación</option>
+            <option value="Terror"      th:selected="${juego.genero == 'Terror'}">Terror</option>
+          </select>
+        </div>
+
+        <!-- ══════════════ SECCIÓN IMAGEN ══════════════ -->
+        <div class="imagen-section">
+          <h4>🖼 Imagen del juego</h4>
+
+          <!-- Imagen actual al editar -->
+          <div class="current-img"
+               th:if="${juego.imagenUrl != null and !#strings.isEmpty(juego.imagenUrl)}">
+            <img th:src="${juego.imagenUrl}" alt="Imagen actual">
+            <div class="current-img-info">
+              <strong>✔ Imagen actual</strong>
+              <span th:text="${juego.imagenUrl}"></span>
+              <br><small style="margin-top:0.4rem;display:block">Selecciona una nueva imagen abajo para reemplazarla.</small>
+              <button type="submit" form="form-eliminar-imagen" class="btn-danger"
+                      style="font-size:0.78rem;padding:0.25rem 0.7rem;margin-top:0.6rem"
+                      onclick="return confirm('¿Eliminar esta imagen del servidor?')">🗑 Eliminar foto</button>
+            </div>
+          </div>
+
+          <!-- Tabs: Subir archivo / URL externa -->
+          <div class="imagen-tabs">
+            <button type="button" class="img-tab active" onclick="switchTab('upload')">📁 Subir archivo</button>
+            <button type="button" class="img-tab" onclick="switchTab('url')">🔗 URL externa</button>
+          </div>
+
+          <!-- Panel: subir archivo -->
+          <div class="img-panel active" id="panel-upload">
+            <div class="drop-zone" id="dropZone">
+              <input type="file" name="imagenArchivo" id="inputArchivo"
+                     accept="image/jpeg,image/png,image/webp,image/gif"
+                     onchange="previewArchivo(this)">
+              <div class="drop-zone-icon">🖼</div>
+              <div class="drop-zone-text">Arrastra tu imagen aquí o <span>haz clic para seleccionar</span></div>
+              <div class="drop-zone-hint">JPG, PNG, WEBP o GIF · Máx. 10 MB</div>
+            </div>
+            <div class="img-preview-wrap" id="previewWrap">
+              <img id="previewImg" src="" alt="Preview">
+              <div class="img-preview-info">
+                <strong id="previewNombre"></strong>
+                <span id="previewTamano"></span>
+                <br>
+                <button type="button" class="btn-clear-img" onclick="limpiarArchivo()">✕ Quitar</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Panel: URL externa -->
+          <div class="img-panel" id="panel-url">
+            <div class="form-group">
+              <label>URL de la imagen</label>
+              <input type="url" name="imagenUrl" id="inputUrl"
+                     th:value="${juego.imagenUrl}"
+                     placeholder="https://ejemplo.com/portada.jpg"
+                     oninput="previewUrl(this.value)">
+            </div>
+            <div class="url-preview" id="urlPreviewWrap">
+              <img id="urlPreviewImg" src="" alt="Preview URL"
+                   onerror="this.style.display='none'" onload="this.style.display='block'">
+            </div>
+          </div>
+
+        </div>
+        <!-- ══════════════ FIN IMAGEN ══════════════ -->
+
+        <!-- SECCIÓN PRECIOS -->
+        <div class="precios-section">
+          <h4>💰 Precios por plataforma de venta</h4>
+          <p style="font-size:0.8rem;color:var(--muted);margin-bottom:0.75rem">
+            Agrega el precio del juego en cada tienda donde esté disponible.
+          </p>
+          <div class="plataformas-rapidas">
+            <button type="button" class="btn-plat" onclick="agregarPlataforma('Steam')">+ Steam</button>
+            <button type="button" class="btn-plat" onclick="agregarPlataforma('Epic Games')">+ Epic Games</button>
+            <button type="button" class="btn-plat" onclick="agregarPlataforma('GOG')">+ GOG</button>
+          </div>
+          <div id="precios-container">
+            <div th:if="${juego.precios != null}" th:each="entrada : ${juego.precios}">
+              <div class="precio-row">
+                <input type="text"   name="plataformaNombre" th:value="${entrada.plataforma}" placeholder="Plataforma">
+                <input type="number" name="plataformaPrecio" th:value="${entrada.precio}"    placeholder="Precio" min="0" step="0.01">
+                <button type="button" class="btn-remove" onclick="this.closest('.precio-row').remove()">✕</button>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="btn-add-precio" onclick="agregarFilaPrecio()">+ Agregar otra plataforma</button>
+        </div>
+
+      </div><!-- /form-grid -->
+
+      <div class="form-actions">
+        <button type="submit" class="btn">Guardar Juego</button>
+        <a th:href="@{/admin}" class="btn" style="background:#1a1a1a;color:var(--text);border:1px solid #333">Cancelar</a>
+      </div>
+    </form>
+  </div>
+
+  <!-- Formulario separado: HTML no permite forms anidados; botón usa form="form-eliminar-imagen" -->
+  <form id="form-eliminar-imagen"
+        th:action="@{/admin/juego/{id}/eliminar-imagen(id=${juego.juegoId})}"
+        method="post"
+        style="display:none"></form>
+
+  <footer class="footer"><p>© 2026 — <span style="color:var(--primary)">PLAYGROUND</span></p></footer>
+
+  <script>
+    // ── Tabs imagen ────────────────────────────────────
+    function switchTab(tab) {
+      document.querySelectorAll('.img-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.img-panel').forEach(p => p.classList.remove('active'));
+      document.getElementById('panel-' + tab).classList.add('active');
+      event.currentTarget.classList.add('active');
+
+      // Al cambiar a URL, vaciar el file input para que no interfiera
+      if (tab === 'url') {
+        limpiarArchivo();
+      } else {
+        // Al volver a upload, limpiar el campo URL para que no interfiera
+        document.getElementById('inputUrl').value = '';
+        document.getElementById('urlPreviewWrap').classList.remove('visible');
+      }
+    }
+
+    // ── Preview archivo ────────────────────────────────
+    function previewArchivo(input) {
+      if (!input.files || !input.files[0]) return;
+      const file = input.files[0];
+      const reader = new FileReader();
+      reader.onload = e => {
+        document.getElementById('previewImg').src = e.target.result;
+        document.getElementById('previewNombre').textContent = file.name;
+        document.getElementById('previewTamano').textContent = formatBytes(file.size);
+        document.getElementById('previewWrap').classList.add('visible');
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function limpiarArchivo() {
+      const input = document.getElementById('inputArchivo');
+      input.value = '';
+      document.getElementById('previewWrap').classList.remove('visible');
+      document.getElementById('previewImg').src = '';
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + ' B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+
+    // ── Preview URL ────────────────────────────────────
+    function previewUrl(url) {
+      const wrap = document.getElementById('urlPreviewWrap');
+      const img  = document.getElementById('urlPreviewImg');
+      if (url && url.startsWith('http')) {
+        img.src = url;
+        wrap.classList.add('visible');
+      } else {
+        wrap.classList.remove('visible');
+      }
+    }
+
+    // ── Drag & drop ────────────────────────────────────
+    const dropZone = document.getElementById('dropZone');
+    dropZone.addEventListener('dragover',  e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+    dropZone.addEventListener('drop', e => {
+      e.preventDefault();
+      dropZone.classList.remove('drag-over');
+      const files = e.dataTransfer.files;
+      if (files.length > 0) {
+        const input = document.getElementById('inputArchivo');
+        // Asignar al input via DataTransfer
+        const dt = new DataTransfer();
+        dt.items.add(files[0]);
+        input.files = dt.files;
+        previewArchivo(input);
+      }
+    });
+
+    // ── Precios ────────────────────────────────────────
+    function agregarFilaPrecio(nombre) {
+      const container = document.getElementById('precios-container');
+      const row = document.createElement('div');
+      row.className = 'precio-row';
+      row.innerHTML = `
+        <input type="text"   name="plataformaNombre" value="${nombre || ''}" placeholder="Plataforma">
+        <input type="number" name="plataformaPrecio" placeholder="Precio" min="0" step="0.01">
+        <button type="button" class="btn-remove" onclick="this.closest('.precio-row').remove()">✕</button>
+      `;
+      container.appendChild(row);
+      row.querySelector('input[name="plataformaNombre"]').focus();
+    }
+
+    function agregarPlataforma(nombre) {
+      const existentes = document.querySelectorAll('input[name="plataformaNombre"]');
+      for (const input of existentes) {
+        if (input.value.trim().toLowerCase() === nombre.toLowerCase()) {
+          input.closest('.precio-row').querySelector('input[name="plataformaPrecio"]').focus();
+          return;
+        }
+      }
+      agregarFilaPrecio(nombre);
+    }
+
+    // ── Init: mostrar preview si ya hay URL guardada ───
+    window.addEventListener('DOMContentLoaded', () => {
+      const urlInput = document.getElementById('inputUrl');
+      if (urlInput && urlInput.value) {
+        previewUrl(urlInput.value);
+        // Activar tab URL si hay URL pero no es /uploads/
+        if (!urlInput.value.startsWith('/uploads/')) {
+          switchTab('url');
+          document.querySelectorAll('.img-tab')[1].classList.add('active');
+          document.querySelectorAll('.img-tab')[0].classList.remove('active');
+        }
+      }
+    });
+  </script>
+</body>
+</html>

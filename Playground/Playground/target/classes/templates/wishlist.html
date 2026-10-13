@@ -1,0 +1,64 @@
+<!--
+  wishlist.html — Lista de deseos del usuario autenticado
+  Modelo: juegos (List). Rutas POST para eliminar ítems.
+-->
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <title>Lista de Deseos — Playground</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+  <nav class="navbar">
+    <a th:href="@{/}" style="text-decoration:none"><h1 class="logo"><span style="color:var(--primary)">PLAY</span>GROUND</h1></a>
+    <ul class="nav-links">
+      <li><a th:href="@{/dashboard}">Tienda</a></li>
+      <li><a th:href="@{/buscar}">Buscar</a></li>
+      <li><a th:href="@{/wishlist}" style="color:var(--primary)">❤ Wishlist</a></li>
+      <li><a th:href="@{/perfil}">Mi perfil</a></li>
+    </ul>
+    <form th:action="@{/logout}" method="post" style="margin:0">
+      <button type="submit" class="btn small" style="background:transparent;border:1px solid #333;color:var(--muted)">Salir</button>
+    </form>
+  </nav>
+
+  <div class="wishlist-wrap">
+    <h2 style="font-family:'Bebas Neue';font-size:2rem;margin-bottom:0.5rem">❤ Lista de Deseos</h2>
+    <!-- th:text con expresión de concatenación para el contador -->
+    <p style="color:var(--muted);margin-bottom:1rem" th:text="${juegos.size()} + ' juegos guardados'"></p>
+
+    <!-- Estado vacío: th:if cuando no hay juegos en la lista -->
+    <div class="vacio" th:if="${juegos.isEmpty()}">
+      <p style="font-size:3rem">❤</p>
+      <p>Tu lista de deseos está vacía.</p>
+      <a th:href="@{/dashboard}" style="color:var(--primary)">Explorar tienda →</a>
+    </div>
+
+    <!-- th:unless es lo contrario de th:if: muestra la rejilla si hay elementos -->
+    <div class="wishlist-grid" th:unless="${juegos.isEmpty()}">
+      <div class="wish-card" th:each="juego : ${juegos}">
+        <h3 th:text="${juego.nombre}">Juego</h3>
+        <div class="genero" th:text="${juego.genero}">Género</div>
+        <div class="plat-min"
+             th:if="${juego.plataformaMinima != null}"
+             th:text="'Mejor precio en ' + ${juego.plataformaMinima}"></div>
+        <div class="precio"
+             th:text="${juego.precioMinimo > 0 ? 'Desde $' + #numbers.formatDecimal(juego.precioMinimo,1,0) : 'Ver precios'}">
+        </div>
+        <div class="wish-actions">
+          <a th:href="@{/juegos/{id}(id=${juego.juegoId})}" class="btn small" style="flex:1;text-align:center">Ver precios</a>
+          <!-- Formulario POST para quitar de la wishlist (requiere sesión) -->
+          <form th:action="@{/wishlist/eliminar/{id}(id=${juego.juegoId})}" method="post">
+            <button type="submit" class="btn small" style="background:#1a1a1a;color:#ff4444;border:1px solid #ff4444">✕</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer"><p>© 2026 — <span style="color:var(--primary)">PLAYGROUND</span></p></footer>
+</body>
+</html>

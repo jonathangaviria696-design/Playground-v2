@@ -1,0 +1,109 @@
+<!--
+  admin-dashboard.html — Panel administrativo (rol ADMIN)
+  Modelo: totalUsuarios, totalJuegos, masVendidos, juegos, mensaje, error.
+-->
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Panel Admin — Playground</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+  <nav class="navbar">
+    <a th:href="@{/}" style="text-decoration:none"><h1 class="logo"><span style="color:var(--primary)">PLAY</span>GROUND</h1></a>
+    <ul class="nav-links">
+      <li><a th:href="@{/dashboard}">Ver Tienda</a></li>
+      <li><a th:href="@{/admin}" style="color:var(--primary)">Admin Panel</a></li>
+    </ul>
+    <!-- Cierre de sesión del administrador -->
+    <form th:action="@{/logout}" method="post" style="margin:0">
+      <button type="submit" class="btn small" style="background:transparent;border:1px solid #333;color:var(--muted)">Salir</button>
+    </form>
+  </nav>
+
+  <div class="admin-wrap">
+    <h2 style="font-family:'Bebas Neue';font-size:2.5rem;margin-bottom:1.5rem">Panel Administrativo</h2>
+
+    <div class="alerta ok" th:if="${mensaje}" th:text="${mensaje}"></div>
+    <div class="alerta err" th:if="${error}" th:text="${error}"></div>
+
+    <!-- Tarjetas de estadísticas: th:text inyecta totales del modelo -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">👤 Usuarios</div>
+        <div class="stat-valor" th:text="${totalUsuarios}">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">🎮 Juegos</div>
+        <div class="stat-valor" th:text="${totalJuegos}">0</div>
+      </div>
+    </div>
+
+    <!-- Ranking de juegos más vistos/vendidos; th:each sobre masVendidos -->
+    <div class="top-juegos" th:if="${masVendidos != null and !masVendidos.isEmpty()}">
+      <h3 style="font-family:'Bebas Neue';font-size:1.3rem;margin-bottom:1rem;color:var(--muted)">🏆 JUEGOS MÁS VISTOS / VENDIDOS</h3>
+      <div th:each="item : ${masVendidos}" class="top-juego-item">
+        <span style="font-weight:600;min-width:200px" th:text="${item.nombre}">Juego</span>
+        <div class="bar-bg">
+          <div class="bar-fill" th:style="'width:' + (${item.ventas} * 20) + 'px'"></div>
+        </div>
+        <span style="color:var(--primary);font-family:'Bebas Neue';font-size:1.2rem" th:text="${item.ventas} + ' ventas'">0</span>
+      </div>
+    </div>
+
+    <!-- Tabla CRUD de juegos: editar y eliminar por fila -->
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="section-title">Gestión de Juegos</div>
+      <a th:href="@{/admin/juego/nuevo}" class="btn small">+ Nuevo Juego</a>
+    </div>
+
+    <div style="background:#111;border:1px solid #1e1e1e;overflow-x:auto">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Género</th>
+            <th>Tiendas disponibles</th>
+            <th>Precio mínimo</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- th:each recorre todos los juegos para administración -->
+          <tr th:each="juego : ${juegos}">
+            <td th:text="${juego.nombre}">Juego</td>
+            <td th:text="${juego.genero ?: '—'}">—</td>
+            <td>
+              <span th:if="${juego.precios != null}"
+                    th:each="item : ${juego.precios}"
+                    class="plat-tag-sm" th:text="${item.plataforma}">Steam</span>
+              <span th:if="${juego.precios == null or juego.precios.isEmpty()}"
+                    style="color:#444;font-size:0.8rem">Sin tiendas</span>
+            </td>
+            <td>
+              <span class="precio-min"
+                    th:text="${juego.precioMinimo > 0 ? '$' + #numbers.formatDecimal(juego.precioMinimo,1,0) : '—'}">—</span>
+              <span th:if="${juego.plataformaMinima != null}"
+                    style="font-size:0.75rem;color:var(--muted)"
+                    th:text="' en ' + ${juego.plataformaMinima}"></span>
+            </td>
+            <td>
+              <div class="acciones">
+                <a th:href="@{/admin/juego/{id}/editar(id=${juego.juegoId})}" class="btn-edit">Editar</a>
+                <!-- POST eliminar; confirm() en el botón evita borrado accidental -->
+                <form th:action="@{/admin/juego/{id}/eliminar(id=${juego.juegoId})}" method="post">
+                  <button type="submit" class="btn-danger" onclick="return confirm('¿Eliminar este juego?')">Eliminar</button>
+                </form>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <footer class="footer"><p>© 2026 — <span style="color:var(--primary)">PLAYGROUND</span></p></footer>
+</body>
+</html>

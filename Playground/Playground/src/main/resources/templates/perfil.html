@@ -1,0 +1,110 @@
+<!--
+  perfil.html — Gestión del perfil del usuario autenticado
+  Modelo: usuario, perfilForm, contrasenaForm, mensajeExito, mostrarContrasena.
+-->
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Perfil — Playground</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+  <nav class="navbar">
+    <a th:href="@{/}" style="text-decoration:none">
+      <h1 class="logo"><span style="color:var(--primary)">PLAY</span>GROUND</h1>
+    </a>
+    <ul class="nav-links">
+      <li><a th:href="@{/dashboard}">Tienda</a></li>
+      <li><a th:href="@{/buscar}">Buscar</a></li>
+      <li sec:authorize="isAuthenticated()"><a th:href="@{/wishlist}">❤ Wishlist</a></li>
+      <li sec:authorize="isAuthenticated()"><a th:href="@{/perfil}" style="color:var(--primary)">Mi perfil</a></li>
+      <li sec:authorize="hasRole('ADMIN')"><a th:href="@{/admin}" style="color:var(--primary)">Admin</a></li>
+    </ul>
+    <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post" style="margin:0">
+      <button type="submit" class="btn small" style="background:transparent;border:1px solid #333;color:var(--muted)">Salir</button>
+    </form>
+  </nav>
+
+  <div class="perfil-wrap">
+    <div class="perfil-header">
+      <div class="perfil-avatar" th:text="${#strings.toUpperCase(#strings.substring(usuario.username, 0, 1))}">U</div>
+      <div>
+        <h2 th:text="${usuario.username}">Usuario</h2>
+        <p class="perfil-rol" th:text="${usuario.role != null ? #strings.replace(usuario.role, 'ROLE_', '') : 'USER'}">USER</p>
+      </div>
+    </div>
+
+    <div class="alerta ok" th:if="${mensajeExito}" th:text="${mensajeExito}"></div>
+
+    <div class="perfil-grid">
+      <!-- Datos personales -->
+      <section class="perfil-card">
+        <h3>Datos personales</h3>
+        <p class="perfil-desc">Actualiza tu información de contacto.</p>
+
+        <form th:action="@{/perfil}" th:object="${perfilForm}" method="post">
+          <div class="form-group">
+            <label>Nombre de usuario</label>
+            <input type="text" th:value="${usuario.username}" disabled class="input-readonly">
+          </div>
+          <div class="form-group">
+            <label>Email *</label>
+            <input type="email" th:field="*{email}"
+                   th:classappend="${#fields.hasErrors('email') ? 'is-error' : ''}"
+                   required autocomplete="email">
+            <div class="field-error" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+          </div>
+          <div class="form-group">
+            <label>Teléfono <span class="opcional">(opcional)</span></label>
+            <input type="text" th:field="*{telefono}" autocomplete="tel">
+          </div>
+          <div class="form-group">
+            <label>Dirección <span class="opcional">(opcional)</span></label>
+            <input type="text" th:field="*{direccion}" autocomplete="street-address">
+          </div>
+          <button type="submit" class="btn-block">GUARDAR CAMBIOS</button>
+        </form>
+      </section>
+
+      <!-- Cambio de contraseña -->
+      <section class="perfil-card">
+        <h3>Seguridad</h3>
+        <p class="perfil-desc">Cambia tu contraseña de acceso.</p>
+
+        <form th:action="@{/perfil/cambiar-contrasena}" th:object="${contrasenaForm}" method="post">
+          <div class="form-group">
+            <label>Contraseña actual *</label>
+            <input type="password" th:field="*{contraseniaActual}"
+                   th:classappend="${#fields.hasErrors('contraseniaActual') ? 'is-error' : ''}"
+                   required autocomplete="current-password">
+            <div class="field-error" th:if="${#fields.hasErrors('contraseniaActual')}" th:errors="*{contraseniaActual}"></div>
+          </div>
+          <div class="form-group">
+            <label>Nueva contraseña *</label>
+            <input type="password" th:field="*{contraseniaNueva}"
+                   th:classappend="${#fields.hasErrors('contraseniaNueva') ? 'is-error' : ''}"
+                   required autocomplete="new-password">
+            <div class="field-error" th:if="${#fields.hasErrors('contraseniaNueva')}" th:errors="*{contraseniaNueva}"></div>
+          </div>
+          <div class="form-group">
+            <label>Confirmar nueva contraseña *</label>
+            <input type="password" th:field="*{confirmarContrasenia}"
+                   th:classappend="${#fields.hasErrors('confirmarContrasenia') ? 'is-error' : ''}"
+                   required autocomplete="new-password">
+            <div class="field-error" th:if="${#fields.hasErrors('confirmarContrasenia')}" th:errors="*{confirmarContrasenia}"></div>
+          </div>
+          <button type="submit" class="btn-block btn-outline">CAMBIAR CONTRASEÑA</button>
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>© 2026 — <span style="color:var(--primary)">PLAYGROUND</span></p>
+  </footer>
+</body>
+</html>

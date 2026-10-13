@@ -1,0 +1,153 @@
+<!--
+  juego-detalle.html — Ficha de un juego con precios por tienda y wishlist
+  Modelo: juego, enWishlist, juegosRelacionados, mensaje, error.
+-->
+<!DOCTYPE html>
+<!-- xmlns:sec — visibilidad de login/logout y enlaces según rol -->
+<html lang="es" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Título dinámico con el nombre del juego -->
+  <title th:text="${juego.nombre} + ' — Playground'">Juego</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+  <nav class="navbar">
+    <a th:href="@{/}" style="text-decoration:none">
+      <h1 class="logo"><span style="color:var(--primary)">PLAY</span>GROUND</h1>
+    </a>
+    <ul class="nav-links">
+      <li><a th:href="@{/dashboard}">Tienda</a></li>
+      <li><a th:href="@{/buscar}">Buscar</a></li>
+      <li sec:authorize="isAuthenticated()"><a th:href="@{/wishlist}">❤ Wishlist</a></li>
+      <li sec:authorize="isAuthenticated()"><a th:href="@{/perfil}">Mi perfil</a></li>
+      <li sec:authorize="hasRole('ADMIN')"><a th:href="@{/admin}" style="color:var(--primary)">Admin</a></li>
+    </ul>
+    <div style="display:flex;gap:0.5rem">
+      <a sec:authorize="!isAuthenticated()" th:href="@{/login}" class="btn small">Iniciar sesión</a>
+      <form sec:authorize="isAuthenticated()" th:action="@{/logout}" method="post" style="margin:0">
+        <button type="submit" class="btn small" style="background:transparent;border:1px solid #333;color:var(--muted)">Salir</button>
+      </form>
+    </div>
+  </nav>
+
+  <!-- Migas de pan: enlaces a tienda y filtro por género -->
+  <div class="breadcrumb">
+    <a th:href="@{/dashboard}">Tienda</a> ›
+    <a th:if="${juego.genero != null}" th:href="@{/buscar(genero=${juego.genero})}" th:text="${juego.genero}">Género</a>
+    <span th:if="${juego.genero == null}">Sin género</span> ›
+    <span th:text="${juego.nombre}">Juego</span>
+  </div>
+
+  <!-- Mensajes flash: th:if + th:text desde atributos mensaje / error -->
+  <div th:if="${mensaje}" class="alerta ok" th:text="${mensaje}"></div>
+  <div th:if="${error}"   class="alerta err" th:text="${error}"></div>
+
+  <!-- Detalle principal -->
+  <div class="detalle-hero">
+
+    <!-- Portada -->
+    <div class="detalle-cover">
+      <img th:if="${juego.imagenUrl != null and !#strings.isEmpty(juego.imagenUrl)}"
+           th:src="${juego.imagenUrl}" th:alt="${juego.nombre}">
+      <!-- th:unless muestra placeholder si no hay URL de imagen -->
+      <div class="detalle-cover-placeholder"
+           th:unless="${juego.imagenUrl != null and !#strings.isEmpty(juego.imagenUrl)}">
+        <span th:text="${juego.nombre != null ? juego.nombre.substring(0,1).toUpperCase() : '?'}">?</span>
+      </div>
+    </div>
+
+    <!-- Info -->
+    <div class="detalle-info">
+
+      <div class="detalle-badges">
+        <span class="badge badge-genero" th:text="${juego.genero ?: 'N/A'}">Género</span>
+      </div>
+
+      <h1 class="detalle-nombre" th:text="${juego.nombre}">Nombre del Juego</h1>
+      <p class="detalle-desc" th:text="${juego.descripcion ?: 'Sin descripción disponible.'}">Descripción</p>
+
+      <div class="detalle-meta">
+        <div class="meta-item">
+          <label>Desarrolladora</label>
+          <span th:text="${juego.desarrolladora ?: 'N/A'}">Dev</span>
+        </div>
+        <div class="meta-item">
+          <label>Lanzamiento</label>
+          <span th:text="${juego.fechaDeLanzamiento ?: 'N/A'}">2024</span>
+        </div>
+      </div>
+
+      <!-- Panel de precios por plataforma -->
+      <div class="precios-panel">
+        <h3>💰 Precios por tienda</h3>
+
+        <div th:if="${juego.precios != null and !juego.precios.isEmpty()}">
+          <div class="precio-plataforma" th:each="entrada : ${juego.precios}">
+            <div class="plat-nombre">
+              <!-- Iconos por plataforma -->
+              <span class="plat-icono"
+                    th:text="${entrada.plataforma == 'Steam' ? '🎮' : entrada.plataforma == 'Epic Games' ? '⚡' : entrada.plataforma == 'GOG' ? '🌐' : '🏪'}"></span>
+              <span th:text="${entrada.plataforma}">Steam</span>
+              <span class="mejor-badge"
+                    th:if="${juego.plataformaMinima != null and juego.plataformaMinima == entrada.plataforma}">
+                MEJOR PRECIO
+              </span>
+            </div>
+            <span class="plat-precio"
+                  th:classappend="${juego.plataformaMinima != null and juego.plataformaMinima == entrada.plataforma ? 'mejor' : ''}"
+                  th:text="'$' + ${#numbers.formatDecimal(entrada.precio, 1, 0)}">
+            </span>
+          </div>
+        </div>
+
+        <p class="sin-precios" th:if="${juego.precios == null or juego.precios.isEmpty()}">
+          No hay precios disponibles por el momento.
+        </p>
+
+        <!-- Wishlist: formularios POST según si el juego ya está en la lista (enWishlist) -->
+        <form th:if="${enWishlist != null and !enWishlist}"
+              th:action="@{/wishlist/agregar/{id}(id=${juego.juegoId})}" method="post">
+          <button type="submit" class="btn-wish">❤ Añadir a lista de deseos</button>
+        </form>
+        <form th:if="${enWishlist != null and enWishlist}"
+              th:action="@{/wishlist/eliminar/{id}(id=${juego.juegoId})}" method="post">
+          <button type="submit" class="btn-wish en-lista">❤ En tu lista de deseos</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Juegos relacionados -->
+  <div class="relacionados-section"
+       th:if="${juegosRelacionados != null and !juegosRelacionados.isEmpty()}">
+    <h3 style="font-family:'Bebas Neue';font-size:1.5rem;margin-bottom:1rem;border-bottom:1px solid #1e1e1e;padding-bottom:0.75rem">
+      También te puede gustar
+    </h3>
+    <div class="cards">
+      <div class="card" th:each="rel : ${juegosRelacionados}"
+           th:if="${rel.juegoId != juego.juegoId}">
+        <div class="card-img">
+          <img th:if="${rel.imagenUrl != null and !#strings.isEmpty(rel.imagenUrl)}"
+               th:src="${rel.imagenUrl}" th:alt="${rel.nombre}" style="width:100%;height:100%;object-fit:cover;">
+        </div>
+        <div class="card-badge" th:text="${rel.genero}">Género</div>
+        <h3 th:text="${rel.nombre}">Nombre</h3>
+        <div class="card-footer">
+          <span class="precio"
+                th:text="${rel.precioMinimo > 0 ? 'Desde $' + #numbers.formatDecimal(rel.precioMinimo,1,0) : 'Ver precios'}">
+          </span>
+          <a th:href="@{/juegos/{id}(id=${rel.juegoId})}" class="btn small">Ver</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="footer">
+    <p>© 2026 — <span style="color:var(--primary)">PLAYGROUND</span></p>
+  </footer>
+</body>
+</html>

@@ -1,0 +1,68 @@
+<!--
+  login.html — Página de inicio de sesión
+  Vista procesada por Thymeleaf. El controlador redirige aquí en /login.
+  Spring Security procesa el POST del formulario (username/password por defecto).
+-->
+<!DOCTYPE html>
+<!-- xmlns:th activa el dialecto Thymeleaf para atributos th:* en todo el documento -->
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Iniciar Sesión — Playground</title>
+  <!-- Fuentes Google (Bebas Neue + Rajdhani) -->
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- th:href="@{/css/styles.css}" genera la URL del recurso estático (/css/styles.css) -->
+  <link rel="stylesheet" th:href="@{/css/styles.css}">
+</head>
+<body>
+  <!-- Barra de navegación mínima: logo enlaza al inicio -->
+  <nav class="navbar">
+    <!-- th:href="@{/}" resuelve la ruta raíz de la aplicación -->
+    <a th:href="@{/}" style="text-decoration:none"><h1 class="logo"><span style="color:var(--primary)">PLAY</span>GROUND</h1></a>
+  </nav>
+
+  <!-- Contenedor principal del formulario de login -->
+  <div class="login-wrap">
+    <h2>INICIAR SESIÓN</h2>
+
+    <!-- Mensajes flash / parámetros de URL tras intento de login o logout -->
+    <!-- th:if="${param.error}" muestra error cuando Spring Security redirige con ?error -->
+    <div class="alerta err" th:if="${param.error}">Usuario o contraseña incorrectos.</div>
+    <!-- th:if="${param.logout}" confirma cierre de sesión exitoso -->
+    <div class="alerta ok"  th:if="${param.logout}">Sesión cerrada correctamente.</div>
+    <!-- Mensaje del controlador tras registro exitoso (atributo del modelo) -->
+    <!-- th:text="${registroExitoso}" inserta el texto del mensaje en el DOM -->
+    <div class="alerta ok"  th:if="${registroExitoso}" th:text="${registroExitoso}"></div>
+
+    <!--
+      Formulario estándar de Spring Security.
+      th:action="@{/login}" → POST a /login (filtro de autenticación).
+      Campos requeridos por defecto: name="username" y name="password".
+      No usa th:object; Security lee los nombres fijos del formulario.
+    -->
+    <form th:action="@{/login}" method="post">
+      <div class="form-group">
+        <label>Usuario</label>
+        <input type="text" name="username" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label>Contraseña</label>
+        <input type="password" name="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-block">ENTRAR</button>
+    </form>
+
+    <!-- Inicio de sesión alternativo con OAuth2 (Google) -->
+    <div class="oauth-login">
+      <p>O inicia sesión con:</p>
+      <!-- th:href apunta al endpoint de autorización OAuth2 de Spring Security -->
+      <a th:href="@{/oauth2/authorization/google}" class="btn btn-google">Iniciar sesión con Google</a>
+    </div>
+
+    <!-- Enlace a la página de registro de nuevos usuarios -->
+    <div class="registro-link">
+      ¿No tienes cuenta? <a th:href="@{/registro}">Regístrate aquí</a>
+    </div>
+  </div>
+</body>
+</html>
